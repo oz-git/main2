@@ -1,0 +1,65 @@
+event=ENTERQUEUE member-queue-start
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CallerDestinationNumber EventDateLocal CCAction ccevent
+
+event=RING_AGENT agent-offering
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent EventDateLocal CCAction event
+
+event=CONNECT  bridge-agent-start
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent CCMemberJoinedTime CCAgentCalledTime CCAgentAnsweredTime EventDateLocal CCAction event
+
+event = COMPLETEAGENT COMPLETECALLER TRANSFER  member-queue-end
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent CCMemberJoinedTime CCAgentCalledTime CCAgentAnsweredTime CCMemberLeavingTime EventDateLocal CCAction event
+
+event = EXITEMPTY EXITWITHTIMEOUT HANGUPCALLER member-queue-end
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCMemberJoinedTime CCMemberLeavingTime CCAction event
+
+
+Отсюда завтра начать
+event=BRIDGE_AGENT_END bridge-agent-end
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent CCMemberJoinedTime CCAgentCalledTime CCAgentAnsweredTime CCBridgeTerminatedTime CCHangupCause VariableEndpointDisposition CCAction event
+
+event= RINGNOANSWER HANGUPCALLER USER_BUSY bridge-agent-fail
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent EventDateLocal CCAgentCalledTime CCAgentAbortedTime CCAction event
+
+
+
+
+event = agent-status-change
+EventDateLocal CCAgent CCAgentStatus CCAction event
+
+event=agent-state-change
+EventDateLocal CCAgent CCAgentState CCAction 
+
+event=members-count QUEUE_MEMBERS_COUNT
+EventDateLocal CCQueue CCCount CCAction event
+
+
+
+CoreUUID CCMemberSessionUUID CCMemberUUID CCMemberCIDNumber CCQueue CCAgent CallerDestinationNumber EventDateLocal CCMemberJoinedTime CCAgentCalledTime CCAgentAbortedTime CCAgentAnsweredTime CCMemberLeavingTime CCAction event CCBridgeTerminatedTime CCHangupCause VariableEndpointDisposition CCAgent CCAgentStatus CCAction CCAgentState CCCount
+
+
+CCAgent CCAgentStatus CCAction CCAgentState CCCount
+
+CoreUUID 
+CCMemberCIDNumber 
+CCQueue 
+CCAgent 
+CallerDestinationNumber 
+EventDateLocal 
+CCMemberJoinedTime 
+CCAgentCalledTime 
+CCAgentAbortedTime 
+CCAgentAnsweredTime 
+CCMemberLeavingTime 
+CCAction 
+CCEvent 
+CCBridgeTerminatedTime 
+CCHangupCause 
+VariableEndpointDisposition 
+CCAgentStatus 
+CCAgentState 
+CCCount
+CCMemberSessionUUID 
+CCMemberUUID 
+
+

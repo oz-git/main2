@@ -1,0 +1,185 @@
+
+
+--set default variables
+	max_digits = 15;
+	digit_timeout = 5000;
+	debug["sql"] = false;
+
+--connect to the database
+	dofile(scripts_dir.."/resources/functions/database_handle.lua");
+	dbh = database_handle('system');
+
+--set the api
+	api = freeswitch.API();
+
+--get the argv values
+	action = argv[2];
+
+--get the session variables
+	----if (session:ready()) then
+	----	session:answer();
+	----end
+
+--get the session variables
+	--if (session:ready()) then
+		--general variables
+		--sip_ffrom = session:getVariable("sip_from");
+       
+       to = event:getHeader("to");
+	if (to) then
+		abc="yes";
+		--freeswitch.consoleLog("notice", "BLF TO Header NOT Empty\n");
+	else 
+		to="none";
+		--freeswitch.consoleLog("notice", "BLF TO Header Empty\n");
+	end
+       ext_sub = string.sub(to, 1, 2);
+	if (ext_sub == "AB") then
+		user_id = string.sub(to, 3, 6);
+		domain_name = string.sub(to, 8, 18);
+
+		--user_id = event:getHeader("from-user");
+		--freeswitch.consoleLog("notice", "BLF RESTORE RESTORE BEFORE TEST " .. user_id .."\n");
+		--domain_name = event:getHeader("realm");
+		--freeswitch.consoleLog("notice", "BLF RESTORE AGENT STATUS " .. user_id .. " DOMAIN " .. domain_name .. "\n");
+			--domain_uuid = session:getVariable("domain_uuid");
+			--domain_name = session:getVariable("domain_name");
+			--context = session:getVariable("context");
+			--uuid = session:get_uuid();
+			--sip_from_user = session:getVariable("sip_from_user");
+			--sip_from_host = session:getVariable("sip_from_host");
+
+		--set the sounds path for the language, dialect and voice
+			--default_language = session:getVariable("default_language");
+			--default_dialect = session:getVariable("default_dialect");
+			--default_voice = session:getVariable("default_voice");
+			--if (not default_language) then default_language = 'en'; end
+			--if (not default_dialect) then default_dialect = 'us'; end
+			--if (not default_voice) then default_voice = 'callie'; end
+	--end
+
+--define the sounds directory
+	--sounds_dir = session:getVariable("sounds_dir");
+	--sounds_dir = sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice;
+
+--set the user_id from the user if its a local call
+	
+--use the voicemail_id to get the list of users assigned to an extension
+	
+	sql = "SELECT domain_uuid FROM v_domains WHERE domain_name = '" .. domain_name .. "'";
+	dbh:query(sql, function(row)
+		domain_uuid = row.domain_uuid;
+		--freeswitch.consoleLog("NOTICE", "BLF RESTORE AGENT STATUS DOMAIN_UUID " .. domain_uuid .. "\n");
+	end);
+	
+	sql = "SELECT extension_uuid FROM v_extensions ";
+	sql = sql .. "WHERE domain_uuid = '" .. domain_uuid .."' ";
+	sql = sql .. "AND (extension = '" .. user_id .."' ";
+	sql = sql .. "or number_alias = '" .. user_id .."') ";
+	dbh:query(sql, function(row)
+		extension_uuid = row.extension_uuid;
+	end);
+
+--set the status
+	if (action == "login") then
+		status = 'Available';
+	end
+	if (action == "logout") then
+		status = 'Logged Out';
+	end
+
+--get the dial_string, and extension_uuid
+	sql = "SELECT u.user_uuid, u.username, u.user_status FROM v_extension_users as e, v_users as u ";
+	sql = sql .. "WHERE e.extension_uuid = '" .. extension_uuid .."' ";
+	sql = sql .. "AND e.user_uuid = u.user_uuid ";
+	--if (debug["sql"]) then
+		--freeswitch.consoleLog("NOTICE", "BLF RESTORE RESTORE [call_center] sql: ".. sql .. "\n");
+	--end
+	dbh:query(sql, function(row)
+		--get the user info
+			user_uuid = row.user_uuid;
+			username = row.username;
+			user_status = row.user_status;
+			if (user_status == "Available") then
+				--action = "logout";
+				--status = 'Logged Out';
+				action = "login";
+				status = 'Available';
+			else
+				--action = "login";
+				--status = 'Available';
+				action = "logout";
+				status = 'Logged Out';
+			end
+			--freeswitch.consoleLog("NOTICE", "BLF RESTORE [call_center] AGENT " .. user_id .. " DOMAIN " .. domain_name .. " user_status: " .. status .. "\n");
+
+		--set the user_status in the users table
+		--	sql = "UPDATE v_users SET ";
+		--	sql = sql .. "user_status = '"..status.."' ";
+		--	sql = sql .. "WHERE user_uuid = '" .. user_uuid .."' ";
+		--	if (debug["sql"]) then
+		--		freeswitch.consoleLog("NOTICE", "[call_center] sql: ".. sql .. "\n");
+		--	end
+		--	dbh:query(sql);
+
+		--send a login or logout to mod_callcenter
+		--	cmd = "callcenter_config agent set status "..username.."@"..domain_name.." '"..status.."'";
+		--	freeswitch.consoleLog("notice", "[call center][login] "..cmd.."\n");
+		--	result = api:executeString(cmd);
+
+		--set the presence to terminated - turn the lamp off:
+			if (action == "login") then
+				--freeswitch.consoleLog("info", "BLF RESTORE AGENT " .. user_id .. " login\n");
+				event = freeswitch.Event("PRESENCE_IN");
+				event:addHeader("proto", "sip");
+				event:addHeader("event_type", "presence");
+				event:addHeader("alt_event_type", "dialog");
+				event:addHeader("Presence-Call-Direction", "outbound");
+				event:addHeader("state", "Active (1 waiting)");
+				event:addHeader("from", "AB"..username.."@"..domain_name);
+				event:addHeader("login", "AB"..username.."@"..domain_name);
+				event:addHeader("unique-id", "AB"..username);
+				event:addHeader("answer-state", "terminated");
+				event:fire();
+			end
+		--set presence in - turn lamp on
+			if (action == "logout") then
+				--freeswitch.consoleLog("info", "BLF RESTORE  AGENT " .. user_id .. " logout\n");
+				event = freeswitch.Event("PRESENCE_IN");
+				event:addHeader("proto", "sip");
+				event:addHeader("login", "AB"..username.."@"..domain_name);
+				event:addHeader("from", "AB"..username.."@"..domain_name);
+				event:addHeader("status", "Active (1 waiting)");
+				event:addHeader("rpid", "unknown");
+				event:addHeader("event_type", "presence");
+				event:addHeader("alt_event_type", "dialog");
+				event:addHeader("event_count", "1");
+				event:addHeader("unique-id", "AB"..username);
+				event:addHeader("Presence-Call-Direction", "outbound");
+				event:addHeader("answer-state", "confirmed");
+				event:fire();
+			end
+	end);
+
+--send the status to the display
+	--if (status ~= nil) then
+	--	reply = api:executeString("uuid_display "..uuid.." '"..status.."'");
+	--end
+
+--set the session sleep to give time to see the display
+	--if (session:ready()) then
+	--	session:execute("sleep", "1000");
+	--end
+
+--set the status and presence
+	--if (session:ready()) then
+	--	if (action == "login") then
+	--		session:execute("playback", sounds_dir.."/ivr/ivr-you_are_now_logged_in.wav");
+			--session:execute("playback", "tone_stream://%(500,0,300,200,100,50,25)");
+	--	end
+	--	if (action == "logout") then
+	--		session:execute("playback", sounds_dir.."/ivr/ivr-you_are_now_logged_out.wav");
+			--session:execute("playback", "tone_stream://%(200,0,500,600,700)");
+	--	end
+	--end
+	end
